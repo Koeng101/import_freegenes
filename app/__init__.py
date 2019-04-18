@@ -28,7 +28,7 @@ from .config import PREFIX
 
 from .models import db
 
-from .routes import ns_users, ns_order, ns_file, ns_gene_id
+from .routes import ns_users, ns_order, ns_file, ns_geneid
 
 # initialization
 app = Flask(__name__)
@@ -46,7 +46,7 @@ api = Api(app, version='1.1', title='FG import',
 migrate = Migrate(app, db)
 
 
-namespaces = [ns_users, ns_order, ns_file, ns_gene_id]
+namespaces = [ns_users, ns_order, ns_file, ns_geneid]
 for ns in namespaces:
     api.add_namespace(ns)
 
