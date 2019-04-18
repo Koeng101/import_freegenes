@@ -197,3 +197,47 @@ class SingleFile(Resource):
         db.session.commit()
         return jsonify({'success':True})
 
+@ns_file.route('/upload')
+class NewFile(Resource):
+    @auth.login_required
+    def post(self):
+        json_file = json.loads(request.files['json'].read())
+        file = request.files['file']
+        new_file = Files(json_file['name'],file, json_file['plate_type'],['order_uuid'])
+        db.session.add(new_file)
+        db.session.commit()
+        return jsonify(new_file.toJSON())
+
+@ns_file.route('/download/<uuid>')
+class DownloadFile(Resource):
+    def get(self,uuid):
+        obj = Files.query.filter_by(uuid=uuid).first()
+        return obj.download()
+
+###
+
+ns_order = Namespace('orders', description='Orders')
+order_model = ns_order.model('order', {
+    'name': fields.String(),
+    'description': fields.String(),
+    'vendor': fields.String(),
+    'order_id': fields.String(),
+    'quote': fields.String(),
+    'price': fields.Float(),
+    'status': fields.String()
+    })
+CRUD(ns_order,Order,order_model,'order')
+
+###
+
+ns_geneid = Namespace('geneid', description='GeneId')
+geneid_model = ns_geneid.model('geneid', {
+    'gene_id': fields.String(),
+    'status': fields.String(),
+    'evidence': fields.String(),
+    'order_uuid': fields.String(),
+    })
+CRUD(ns_geneid,GeneId,geneid_model,'geneid')
+
+###
+

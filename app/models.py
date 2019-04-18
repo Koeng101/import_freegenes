@@ -58,11 +58,11 @@ def verify_password(username_or_token, password):
     return True
 
 
-##############
-### MiaDNA ###
-##############
+#################
+### FG import ###
+#################
 class Files(db.Model):
-    def __init__(self,name,file):
+    def __init__(self,name,file,plate_type,order_uuid):
         file_name = str(uuid.uuid4())
         def upload_file_to_spaces(file,file_name=file_name,bucket_name=BUCKET,spaces=SPACES):
             """
@@ -77,10 +77,57 @@ class Files(db.Model):
         if upload_file_to_spaces(file,file_name=file_name) == True:
             self.name = name
             self.file_name = file_name
+            self.plate_type = plate_type
+            self.order_uuid = order_uuid 
     __tablename__ = 'files'
     uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
     time_created = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     name = db.Column(db.String, nullable=False) # Name to be displayed to user
     file_name = db.Column(db.String, nullable=False) # Link to spaces
+    plate_type = db.Column(db.String) # Plate type? 
+    order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
+    
+class Order(db.Model):
+    __tablename__ = 'orders'
+    uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
+    time_created = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    time_updated = db.Column(db.DateTime(timezone=True), onupdate=func.now())
+
+    name = db.Column(db.String)
+    description = db.Column(db.String)
+
+    vendor = db.Column(db.String)
+    order_id = db.Column(db.String)
+    quote = db.Column(db.String)
+    price = db.Column(db.Float)
+    status = db.Column(db.String)
+    
+
+    files = db.relationship('Files',backref='order')
+    geneids = db.relationship('GeneId',backref='order')
+
+    def toJSON(self,full=None):
+        dictionary = {'uuid':self.uuid, 'name':self.name, 'description':self.description, 'vendor':self.vendor, 'order_id':self.order_id, 'quote':self.quote, 'status':self.status}
+        if full=='full':
+            dictionary['files'] = [file.uuid for file in self.files]
+            dictionary['geneids'] = [geneid.uuid for geneid in self.geneids]
+        return dictionary
+
+class GeneId(db.Model):
+    __tablename__ = 'geneids'
+    uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
+    time_created = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    time_updated = db.Column(db.DateTime(timezone=True), onupdate=func.now())
+    sample_uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"))
+
+    gene_id = db.Column(db.String)
+    status = db.Column(db.String)
+    evidence = db.Column(db.String)
+    order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
+
+    def toJSON(self,full=None):
+        dictionary = {'uuid':self.uuid, 'sample_uuid':self.sample_uuid, 'gene_id':self.gene_id, 'status':self.status, 'evidence':self.evidence, 'order_uuid':order_uuid}
+        return dictionary
+
 
