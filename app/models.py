@@ -6,8 +6,8 @@ from flask_httpauth import HTTPBasicAuth
 from flask import Flask, abort, request, jsonify, g, url_for, Response
 import uuid
 
-#from .config import SPACES
-#from .config import BUCKET
+from .config import SPACES
+from .config import BUCKET
 
 from .config import SECRET_KEY
 from itsdangerous import (TimedJSONWebSignatureSerializer
