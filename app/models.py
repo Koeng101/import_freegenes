@@ -6,6 +6,7 @@ from flask_httpauth import HTTPBasicAuth
 from flask import Flask, abort, request, jsonify, g, url_for, Response
 import uuid
 
+
 from .config import SPACES
 from .config import BUCKET
 
@@ -61,6 +62,26 @@ def verify_password(username_or_token, password):
 #################
 ### FG import ###
 #################
+def get_total_bytes(s3, key):
+    result = s3.list_objects(Bucket=BUCKET)
+    for item in result['Contents']:
+        if item['Key'] == key:
+            return item['Size']
+
+def get_object(s3, total_bytes,key):
+    if total_bytes > 1000000:
+        return get_object_range(s3, total_bytes, key)
+    return s3.get_object(Bucket=BUCKET, Key=key)['Body'].read()
+
+def get_object_range(s3, total_bytes, key):
+    offset = 0
+    while total_bytes > 0:
+        end = offset + 999999 if total_bytes > 1000000 else ""
+        total_bytes -= 1000000
+        byte_range = 'bytes={offset}-{end}'.format(offset=offset, end=end)
+        offset = end + 1 if not isinstance(end, str) else None
+        yield s3.get_object(Bucket=BUCKET, Key=key, Range=byte_range)['Body'].read()
+
 class Files(db.Model):
     def __init__(self,name,file,plate_type,order_uuid):
         file_name = str(uuid.uuid4())
@@ -70,6 +91,7 @@ class Files(db.Model):
             http://zabana.me/notes/upload-files-amazon-s3-flask.html"""
             try:
                 spaces.upload_fileobj(file,bucket_name,file_name)
+                print('Uploaded')
             except Exception as e:
                 print("Failed: {}".format(e))
                 return False
@@ -139,7 +161,7 @@ class GeneId(db.Model):
     order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
 
     def toJSON(self,full=None):
-        dictionary = {'uuid':self.uuid, 'sample_uuid':self.sample_uuid, 'gene_id':self.gene_id, 'status':self.status, 'evidence':self.evidence, 'order_uuid':order_uuid}
+        dictionary = {'uuid':self.uuid, 'sample_uuid':self.sample_uuid, 'gene_id':self.gene_id, 'status':self.status, 'evidence':self.evidence, 'order_uuid':self.order_uuid}
         return dictionary
 
 

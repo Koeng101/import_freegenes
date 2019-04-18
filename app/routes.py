@@ -8,7 +8,8 @@ from .config import LOGIN_KEY
 from .config import SPACES
 from .config import BUCKET        
 
-
+import pandas as pd
+import io
 
 def request_to_class(dbclass,json_request):
     tags = []
@@ -59,6 +60,8 @@ def crud_post(cls,post,database):
 
 def crud_get(cls,uuid,full=None,jsonify_results=True):
     obj = cls.query.filter_by(uuid=uuid).first()
+    if obj == None:
+        return jsonify([])
     if jsonify_results == True:
         return jsonify(obj.toJSON(full=full))
     else:
@@ -197,10 +200,16 @@ class SingleFile(Resource):
 class NewFile(Resource):
     @auth.login_required
     def post(self):
+        df = pd.read_csv(request.files['file'])
         json_file = json.loads(request.files['json'].read())
         file = request.files['file']
         new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'])
         db.session.add(new_file)
+        if json_file['plate_type'] == 'order':
+            if Order.query.filter_by(uuid=json_file['order_uuid']).first().vendor == 'Twist':
+                evidence = 'twist_ngs'
+                for index,row in df.iterrows():
+                    db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence=''))
         db.session.commit()
         return jsonify(new_file.toJSON())
 
@@ -237,3 +246,6 @@ CRUD(ns_geneid,GeneId,geneid_model,'geneid')
 
 ###
 
+#ns_twist = Namespace('twist', description='Twist')
+
+#@ns_twist.route('/generate_from_glycerol_order'):
