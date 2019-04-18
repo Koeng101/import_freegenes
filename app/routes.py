@@ -188,7 +188,6 @@ class SingleFile(Resource):
     @auth.login_required
     def delete(self,uuid):
         file = Files.query.get(uuid)
-        print(type(SPACES))
         SPACES.delete_object(Bucket=BUCKET,Key=file.file_name)
         db.session.delete(file)
         db.session.commit()
@@ -200,7 +199,7 @@ class NewFile(Resource):
     def post(self):
         json_file = json.loads(request.files['json'].read())
         file = request.files['file']
-        new_file = Files(json_file['name'],file, json_file['plate_type'],['order_uuid'])
+        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'])
         db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())

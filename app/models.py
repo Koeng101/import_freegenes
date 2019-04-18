@@ -78,7 +78,7 @@ class Files(db.Model):
             self.name = name
             self.file_name = file_name
             self.plate_type = plate_type
-            self.order_uuid = order_uuid 
+            self.order_uuid = order_uuid
     __tablename__ = 'files'
     uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
     time_created = db.Column(db.DateTime(timezone=True), server_default=func.now())
@@ -87,6 +87,18 @@ class Files(db.Model):
     file_name = db.Column(db.String, nullable=False) # Link to spaces
     plate_type = db.Column(db.String) # Plate type? 
     order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
+    
+    def toJSON(self,full=None):
+        return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid}
+    def download(self):
+        s3 = SPACES
+        key = self.file_name
+        total_bytes = get_total_bytes(s3,key)
+        return Response(
+            get_object(s3, total_bytes, key),
+            mimetype='text/plain',
+            headers={"Content-Disposition": "attachment;filename={}".format(self.name)})
+
     
 class Order(db.Model):
     __tablename__ = 'orders'
