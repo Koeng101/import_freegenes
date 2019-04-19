@@ -1,4 +1,5 @@
 import json
+import requests
 from .models import *
 from flask_restplus import Api, Resource, fields, Namespace 
 from flask import Flask, abort, request, jsonify, g, url_for, redirect
@@ -7,6 +8,7 @@ from .config import PREFIX
 from .config import LOGIN_KEY
 from .config import SPACES
 from .config import BUCKET        
+from .config import FG_API
 
 import pandas as pd
 import io
@@ -29,20 +31,6 @@ def request_to_class(dbclass,json_request):
                     pass
                 else: 
                     dbclass.files.append(files_in_db[0])
-        elif k == 'plates' and v != []:
-            dbclass.plates = []
-            [dbclass.plates.append(Plate.query.filter_by(uuid=uuid).first()) for uuid in v]
-        elif k == 'samples' and v != []:
-            dbclass.samples = []
-            [dbclass.samples.append(Sample.query.filter_by(uuid=uuid).first()) for uuid in v] # In order to sue 
-        elif k == 'wells' and v != []:
-            dbclass.wells = []
-            [dbclass.samples.append(Well.query.filter_by(uuid=uuid).first()) for uuid in v]
-        elif k == 'derived_from' and v == "":
-            pass
-        elif k == 'fastqs' and v != []:
-            dbclass.fastqs = []
-            [dbclass.fastqs.append(Fastq.query.filter_by(uuid=uuid).first()) for uuid in v]
         else:
             setattr(dbclass,k,v)
     for tag in tags:
@@ -202,14 +190,38 @@ class NewFile(Resource):
     def post(self):
         df = pd.read_csv(request.files['file'])
         json_file = json.loads(request.files['json'].read())
-        file = request.files['file']
-        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'])
-        db.session.add(new_file)
-        if json_file['plate_type'] == 'order':
-            if Order.query.filter_by(uuid=json_file['order_uuid']).first().vendor == 'Twist':
-                evidence = 'twist_ngs'
+        order = Order.query.filter_by(uuid=json_file['order_uuid']).first()
+        status='saved'
+        if order.vendor == 'Twist':
+            if json_file['plate_type'] == 'order':
                 for index,row in df.iterrows():
-                    db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence=''))
+                    gene_uuid = requests.get('{}/parts/get/gene_id/{}'.format(FG_API,row['Name'])).json()['uuid']
+                    new_gene = GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid)
+                    
+                    #r = requests.post(
+
+                    db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid))
+            else:
+                ordered = 0
+                for file in order.files:
+                    if file.plate_type == 'order':
+                        ordered+=1
+                if ordered != 1:
+                    return jsonify({'message': 'Irregular number of order files: {}'.format(str(ordered))})
+                else:
+                    if json_file['plate_type'] == 'glycerol_stock':
+                        for index,row in df.iterrows():
+                            geneid = GeneId.query.filter_by(gene_id=row['Name']))
+                            pass
+
+
+
+
+
+
+        file = request.files['file']
+        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status)
+        db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
 

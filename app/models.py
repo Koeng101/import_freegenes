@@ -83,7 +83,7 @@ def get_object_range(s3, total_bytes, key):
         yield s3.get_object(Bucket=BUCKET, Key=key, Range=byte_range)['Body'].read()
 
 class Files(db.Model):
-    def __init__(self,name,file,plate_type,order_uuid):
+    def __init__(self,name,file,plate_type,order_uuid,status):
         file_name = str(uuid.uuid4())
         def upload_file_to_spaces(file,file_name=file_name,bucket_name=BUCKET,spaces=SPACES):
             """
@@ -101,6 +101,7 @@ class Files(db.Model):
             self.file_name = file_name
             self.plate_type = plate_type
             self.order_uuid = order_uuid
+            self.status = status
     __tablename__ = 'files'
     uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
     time_created = db.Column(db.DateTime(timezone=True), server_default=func.now())
@@ -109,6 +110,7 @@ class Files(db.Model):
     file_name = db.Column(db.String, nullable=False) # Link to spaces
     plate_type = db.Column(db.String) # Plate type? 
     order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
+    status = db.Column(db.String)
     
     def toJSON(self,full=None):
         return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid}
@@ -139,6 +141,7 @@ class Order(db.Model):
     
 
     files = db.relationship('Files',backref='order')
+            if json_file['plate_type'] == 'glycerol_stock':
     geneids = db.relationship('GeneId',backref='order')
 
     def toJSON(self,full=None):
@@ -156,6 +159,7 @@ class GeneId(db.Model):
     sample_uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"))
 
     gene_id = db.Column(db.String)
+    gene_uuid = db.Column(db.String)
     status = db.Column(db.String)
     evidence = db.Column(db.String)
     order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
