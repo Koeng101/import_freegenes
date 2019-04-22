@@ -38,5 +38,5 @@ Werkzeug==0.15.2
 
 biopython
 requests
-jwt
+pyjwt
 
