@@ -25,10 +25,12 @@ from .config import SECRET_KEY
 from .config import DEV
 from .config import LOGIN_KEY
 from .config import PREFIX
+from .config import API_TITLE, API_DESCRIPTION
+
 
 from .models import db
 
-from .routes import ns_users, ns_order, ns_file, ns_geneid
+from .routes import ns_token, ns_order, ns_file, ns_geneid 
 
 # initialization
 app = Flask(__name__)
@@ -40,13 +42,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db.init_app(app)
 auth = HTTPBasicAuth()
-api = Api(app, version='1.1', title='FG import',
-            description='The FreeGenes Order / Import gateway. Tracks orders and imports them into the FreeGenes API from a variety of vendors.',
+authorizations = {
+        'token': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'token'}
+        }
+
+api = Api(app, version='1.1', title=API_TITLE,
+            description=API_DESCRIPTION,
+            authorizations=authorizations
             )
 migrate = Migrate(app, db)
 
 
-namespaces = [ns_users, ns_order, ns_file, ns_geneid]
+namespaces = [ns_token, ns_order, ns_file, ns_geneid]
 for ns in namespaces:
     api.add_namespace(ns)
 

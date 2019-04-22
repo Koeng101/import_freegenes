@@ -15,3 +15,6 @@ SPACES = session.client('s3',
                         aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
 BUCKET = os.environ['BUCKET']
 
+API_TITLE = os.environ['API_TITLE']
+API_DESCRIPTION = os.environ['API_DESCRIPTION']
+

@@ -18,47 +18,6 @@ from passlib.apps import custom_app_context as pwd_context
 db = SQLAlchemy()
 auth = HTTPBasicAuth()
 
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
-    username = db.Column(db.String, index=True)
-    password_hash = db.Column(db.String(150))
-
-    def hash_password(self, password):
-        self.password_hash = pwd_context.hash(password)
-
-    def verify_password(self, password):
-        return pwd_context.verify(password, self.password_hash)
-
-    def generate_auth_token(self, expiration=600):
-        s = Serializer(SECRET_KEY, expires_in=expiration)
-        return s.dumps({'id': str(self.id)})
-
-    @staticmethod
-    def verify_auth_token(token):
-        s = Serializer(SECRET_KEY)
-        try:
-            data = s.loads(token)
-        except SignatureExpired:
-            return None    # valid token, but expired
-        except BadSignature:
-            return None    # invalid token
-        user = User.query.get(data['id'])
-        return user
-
-@auth.verify_password
-def verify_password(username_or_token, password):
-    # first try to authenticate by token
-    user = User.verify_auth_token(username_or_token)
-    if not user:
-        # try to authenticate with username/password
-        user = User.query.filter_by(username=username_or_token).first()
-        if not user or not user.verify_password(password):
-            return False
-    g.user = user
-    return True
-
-
 #################
 ### FG import ###
 #################
@@ -141,7 +100,6 @@ class Order(db.Model):
     
 
     files = db.relationship('Files',backref='order')
-            if json_file['plate_type'] == 'glycerol_stock':
     geneids = db.relationship('GeneId',backref='order')
 
     def toJSON(self,full=None):
@@ -165,7 +123,7 @@ class GeneId(db.Model):
     order_uuid = db.Column(UUID, db.ForeignKey('orders.uuid'), nullable=False)
 
     def toJSON(self,full=None):
-        dictionary = {'uuid':self.uuid, 'sample_uuid':self.sample_uuid, 'gene_id':self.gene_id, 'status':self.status, 'evidence':self.evidence, 'order_uuid':self.order_uuid}
+        dictionary = {'uuid':self.uuid, 'sample_uuid':self.sample_uuid, 'gene_id':self.gene_id, 'gene_uuid':self.gene_uuid, 'status':self.status, 'evidence':self.evidence, 'order_uuid':self.order_uuid}
         return dictionary
 
 

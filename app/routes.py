@@ -13,6 +13,48 @@ from .config import FG_API
 import pandas as pd
 import io
 
+################
+# Generic auth #
+################
+import os
+import jwt
+from functools import wraps
+from flask import make_response, jsonify
+PUBLIC_KEY = os.environ['PUBLIC_KEY']
+def requires_auth(roles):
+    def requires_auth_decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            def decode_token(token):
+                return jwt.decode(token.encode("utf-8"), PUBLIC_KEY, algorithms='RS256')
+            try:
+                decoded = decode_token(str(request.headers['Token']))
+            except Exception as e:
+                post_token = False
+                if request.json != None:
+                    if 'token' in request.json:
+                        try:
+                            decoded = decode_token(request.json.get('token'))
+                            post_token=True
+                        except Exception as e:
+                            return make_response(jsonify({'message': str(e)}),401)
+                if not post_token:
+                    return make_response(jsonify({'message': str(e)}), 401)
+            if set(roles).isdisjoint(decoded['roles']):
+                return make_response(jsonify({'message': 'Not authorized for this endpoint'}),401)
+            return f(*args, **kwargs)
+        return decorated
+    return requires_auth_decorator
+ns_token = Namespace('auth_test', description='Authorization_test')
+@ns_token.route('/')
+class ResourceRoute(Resource):
+    @ns_token.doc('token_resource',security='token')
+    @requires_auth(['user','moderator','admin'])
+    def get(self):
+        return jsonify({'message': 'Success'})
+###
+
+
 def request_to_class(dbclass,json_request):
     tags = []
     for k,v in json_request.items():
@@ -67,7 +109,7 @@ def crud_put(cls,uuid,post,database):
     return jsonify(obj.toJSON())
 
 class CRUD():
-    def __init__(self, namespace, cls, model, name):
+    def __init__(self, namespace, cls, model, name, security='token'):
         self.ns = namespace
         self.cls = cls
         self.model = model
@@ -79,9 +121,9 @@ class CRUD():
             def get(self):
                 return crud_get_list(cls)
 
-            @self.ns.doc('{}_create'.format(self.name))
+            @self.ns.doc('{}_create'.format(self.name),security=security)
             @self.ns.expect(model)
-            @auth.login_required
+            @requires_auth(['moderator','admin'])
             def post(self):
                 return crud_post(cls,request.get_json(),db)
 
@@ -91,14 +133,14 @@ class CRUD():
             def get(self,uuid):
                 return crud_get(cls,uuid)
 
-            @self.ns.doc('{}_delete'.format(self.name))
-            @auth.login_required
+            @self.ns.doc('{}_delete'.format(self.name),security=security)
+            @requires_auth(['moderator','admin'])
             def delete(self,uuid):
                 return crud_delete(cls,uuid,db)
 
-            @self.ns.doc('{}_put'.format(self.name))
+            @self.ns.doc('{}_put'.format(self.name),security=security)
             @self.ns.expect(self.model)
-            @auth.login_required
+            @requires_auth(['moderator','admin'])
             def put(self,uuid):
                 return crud_put(cls,uuid,request.get_json(),db)
 
@@ -117,53 +159,6 @@ class CRUD():
 #========#
 # Routes #
 #========#
-
-###
-
-ns_users = Namespace('users', description='User login')
-user_model = ns_users.model("user", {
-    "username": fields.String(),
-    "password": fields.String(),
-    "login_key": fields.String()
-    })
-
-@ns_users.route('/')
-class UserPostRoute(Resource):
-    @ns_users.doc('user_create')
-    @ns_users.expect(user_model)
-    def post(self):
-        '''Post new user. Checks for Login key'''
-        username = request.json.get('username')
-        password = request.json.get('password')
-        login_key = request.json.get('login_key')
-        if username is None or password is None:
-            abort(400)    # missing arguments
-        if User.query.filter_by(username=username).first() is not None:
-            abort(400)    # existing user
-        if login_key != LOGIN_KEY:
-            abort(403)  # missing login key
-        user = User(username=username)
-        user.hash_password(password)
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({'username': user.username})
-
-@ns_users.route('/token')
-class TokenRoute(Resource):
-    @ns_users.doc('user_token')
-    @auth.login_required
-    def get(self):
-        token = g.user.generate_auth_token(600)
-        return jsonify({'token': token.decode('ascii'), 'duration': 600})
-
-@ns_users.route('/resource')
-class ResourceRoute(Resource):
-    @ns_users.doc('user_resource')
-    @auth.login_required
-    def get(self):
-        return jsonify({'data': 'Success {}'.format(g.user.username)})
-
-### 
         
 ns_file = Namespace('files', description='Files')
 
@@ -176,7 +171,8 @@ class AllFiles(Resource):
 class SingleFile(Resource):
     def get(self,uuid):
         return crud_get(Files,uuid)
-    @auth.login_required
+    @ns_file.doc('file_delete',security='token')
+    @requires_auth(['moderator','admin'])
     def delete(self,uuid):
         file = Files.query.get(uuid)
         SPACES.delete_object(Bucket=BUCKET,Key=file.file_name)
@@ -186,21 +182,23 @@ class SingleFile(Resource):
 
 @ns_file.route('/upload')
 class NewFile(Resource):
-    @auth.login_required
+    @ns_file.doc('file_upload', security='token')
+    @requires_auth(['moderator','admin'])
     def post(self):
         df = pd.read_csv(request.files['file'])
         json_file = json.loads(request.files['json'].read())
         order = Order.query.filter_by(uuid=json_file['order_uuid']).first()
+        if order == None:
+            return jsonify({'message': 'No order found'})
         status='saved'
         if order.vendor == 'Twist':
             if json_file['plate_type'] == 'order':
                 for index,row in df.iterrows():
-                    gene_uuid = requests.get('{}/parts/get/gene_id/{}'.format(FG_API,row['Name'])).json()['uuid']
-                    new_gene = GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid)
-                    
-                    #r = requests.post(
-
-                    db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid))
+                    r = requests.get('https://{}/parts/get/gene_id/{}'.format(FG_API,row['Name']))
+                    if r.status_code == 200:
+                        gene_uuid = r.json()[0]['uuid']
+                        new_gene = GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid)
+                        db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid))
             else:
                 ordered = 0
                 for file in order.files:
@@ -208,20 +206,17 @@ class NewFile(Resource):
                         ordered+=1
                 if ordered != 1:
                     return jsonify({'message': 'Irregular number of order files: {}'.format(str(ordered))})
-                else:
-                    if json_file['plate_type'] == 'glycerol_stock':
-                        for index,row in df.iterrows():
-                            geneid = GeneId.query.filter_by(gene_id=row['Name']))
+                if json_file['plate_type'] == 'glycerol_stock':
+                    for index,row in df.iterrows():
+                        geneid = GeneId.query.filter_by(gene_id=row['Name'])
+                        samples = requests.get('{}/samples/{}'.format(FG_API,geneid.sample_uuid)).json()
+                        if samples == []:
                             pass
-
-
-
-
-
+                            #new_sample = requests.post('{}/samples'.format(FG_API), json=
 
         file = request.files['file']
-        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status)
-        db.session.add(new_file)
+        #new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status)
+        #db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
 
@@ -258,6 +253,4 @@ CRUD(ns_geneid,GeneId,geneid_model,'geneid')
 
 ###
 
-#ns_twist = Namespace('twist', description='Twist')
 
-#@ns_twist.route('/generate_from_glycerol_order'):
