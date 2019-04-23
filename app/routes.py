@@ -214,7 +214,7 @@ class NewFile(Resource):
                     # Handle plate
                     plate_uuid = str(uuid.uuid4())
                     if json_file['plate_type'] == 'glycerol_stock':
-                        new_plate = {'token':token, 'plate_name': json_file['plate_name'], 'plate_form': 'standard96', 'plate_type': 'glycerol_stock', 'notes': 'Glycerol stock from Twist Bioscience', 'uuid': plate_uuid, 'breadcrumb':json_file['breadcrumb']}
+                        new_plate = {'token':token, 'plate_name': json_file['plate_name'], 'plate_form': 'standard96', 'plate_type': 'glycerol_stock', 'notes': 'Glycerol stock from Twist Bioscience', 'uuid': plate_uuid, 'breadcrumb':json_file['breadcrumb'], 'status': 'Stocked'}
                         new_plate = requests.post('{}/plates'.format(FG_API), json=new_plate)
 
                     # Iterate through rows
