@@ -185,12 +185,13 @@ class NewFile(Resource):
     @ns_file.doc('file_upload', security='token')
     @requires_auth(['moderator','admin'])
     def post(self):
+        file_to_upload = request.files['file'].read()
         json_file = json.loads(request.files['json'].read())
         if request.headers['Token'] != None:
             token = str(request.headers['Token'])
         elif 'token' in json_file:
             token = json_file['token']
-        df = pd.read_csv(request.files['file'])
+        df = pd.read_csv(io.BytesIO(file_to_upload))
         order = Order.query.filter_by(uuid=json_file['order_uuid']).first()
         if order == None:
             return jsonify({'message': 'No order found'})
@@ -235,9 +236,7 @@ class NewFile(Resource):
                         # Handle wells
                         new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
-                            
-        file = request.files['file']
-        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
+        new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
         db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
