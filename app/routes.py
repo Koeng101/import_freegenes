@@ -226,7 +226,7 @@ class NewFile(Resource):
                         # Handle sample
                         sample = requests.get('{}/samples/{}'.format(FG_API,geneid.sample_uuid)).json()
                         if sample == []: 
-                            new_sample = {'token':token, 'part_uuid': geneid.gene_uuid, 'uuid': geneid.sample_uuid, 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
+                            new_sample = {'token':token, 'part_uuid': str(geneid.gene_uuid), 'uuid': str(geneid.sample_uuid), 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
                             new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
 
                         # Handle wells
