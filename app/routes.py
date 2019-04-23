@@ -199,7 +199,7 @@ class NewFile(Resource):
         if order.vendor == 'Twist':
             if json_file['plate_type'] == 'order':
                 for index,row in df.iterrows():
-                    r = requests.get('https://{}/parts/get/gene_id/{}'.format(FG_API,row['Name']))
+                    r = requests.get('{}/parts/get/gene_id/{}'.format(FG_API,row['Name']))
                     if r.status_code == 200:
                         gene_uuid = r.json()[0]['uuid']
                         new_gene = GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid)
