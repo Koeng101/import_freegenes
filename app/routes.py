@@ -214,7 +214,7 @@ class NewFile(Resource):
                     # Handle plate
                     plate_uuid = str(uuid.uuid4())
                     if json_file['plate_type'] == 'glycerol_stock':
-                        new_plate = {'token':token, 'plate_name': json_file['plate_name'], 'plate_form': 'standard96', 'plate_type': 'glycerol_stock', 'notes': 'Glycerol stock from Twist Bioscience', 'uuid': plate_uuid}
+                        new_plate = {'token':token, 'plate_name': json_file['plate_name'], 'plate_form': 'standard96', 'plate_type': 'glycerol_stock', 'notes': 'Glycerol stock from Twist Bioscience', 'uuid': plate_uuid, 'breadcrumb':json_file['breadcrumb']}
                         new_plate = requests.post('{}/plates'.format(FG_API), json=new_plate)
 
                     # Iterate through rows
@@ -224,9 +224,12 @@ class NewFile(Resource):
                             return make_response(jsonify({'message': 'geneid not found'}),204)
 
                         # Handle sample
-                        sample = requests.get('{}/samples/{}'.format(FG_API,str(geneid.sample_uuid))).json()
+                        sample_url = '{}/samples/{}'.format(FG_API,str(geneid.sample_uuid))
+                        print(sample_url)
+                        sample = requests.get(sample_url).json()
                         if sample == []: 
                             new_sample = {'token':token, 'part_uuid': str(geneid.gene_uuid), 'uuid': str(geneid.sample_uuid), 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
+                            print(new_sample)
                             new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
 
                         # Handle wells
