@@ -234,8 +234,8 @@ class NewFile(Resource):
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
                             
         file = request.files['file']
-        #new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status, json_file['breadcrumb'])
-        #db.session.add(new_file)
+        new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
+        db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
 
