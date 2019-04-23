@@ -185,8 +185,12 @@ class NewFile(Resource):
     @ns_file.doc('file_upload', security='token')
     @requires_auth(['moderator','admin'])
     def post(self):
-        df = pd.read_csv(request.files['file'])
         json_file = json.loads(request.files['json'].read())
+        if request.headers['Token'] != None:
+            token = str(request.headers['Token'])
+        elif 'token' in json_file:
+            token = json_file['token']
+        df = pd.read_csv(request.files['file'])
         order = Order.query.filter_by(uuid=json_file['order_uuid']).first()
         if order == None:
             return jsonify({'message': 'No order found'})
@@ -206,16 +210,31 @@ class NewFile(Resource):
                         ordered+=1
                 if ordered != 1:
                     return jsonify({'message': 'Irregular number of order files: {}'.format(str(ordered))})
-                if json_file['plate_type'] == 'glycerol_stock':
-                    for index,row in df.iterrows():
-                        geneid = GeneId.query.filter_by(gene_id=row['Name'])
-                        samples = requests.get('{}/samples/{}'.format(FG_API,geneid.sample_uuid)).json()
-                        if samples == []:
-                            pass
-                            #new_sample = requests.post('{}/samples'.format(FG_API), json=
+                if json_file['plate_type'] in ['glycerol_stock', 'dna_stock']:
+                    # Handle plate
+                    plate_uuid = str(uuid.uuid4())
+                    if json_file['plate_type'] == 'glycerol_stock':
+                        new_plate = {'token':token, 'plate_name': json_file['plate_name'], 'plate_form': 'standard96', 'plate_type': 'glycerol_stock', 'notes': 'Glycerol stock from Twist Bioscience', 'uuid': plate_uuid}
+                        new_plate = requests.post('{}/plates'.format(FG_API), json=new_plate)
 
+                    # Iterate through rows
+                    for index,row in df.iterrows():
+                        geneid = GeneId.query.filter_by(gene_id=row['Name']).first()
+                        if geneid == None:
+                            return make_response(jsonify({'message': 'geneid not found'}),204)
+
+                        # Handle sample
+                        sample = requests.get('{}/samples/{}'.format(FG_API,geneid.sample_uuid)).json()
+                        if sample == []: 
+                            new_sample = {'token':token, 'part_uuid': geneid.gene_uuid, 'uuid': geneid.sample_uuid, 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
+                            new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
+
+                        # Handle wells
+                        new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
+                        new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
+                            
         file = request.files['file']
-        #new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status)
+        #new_file = Files(json_file['name'],file, json_file['plate_type'],json_file['order_uuid'],status, json_file['breadcrumb'])
         #db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
