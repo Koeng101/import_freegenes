@@ -5,7 +5,6 @@ from flask_restplus import Api, Resource, fields, Namespace
 from flask import Flask, abort, request, jsonify, g, url_for, redirect
 
 from .config import PREFIX
-from .config import LOGIN_KEY
 from .config import SPACES
 from .config import BUCKET        
 from .config import FG_API
@@ -52,7 +51,7 @@ class ResourceRoute(Resource):
     @requires_auth(['user','moderator','admin'])
     def get(self):
         return jsonify({'message': 'Success'})
-###
+##
 
 
 def request_to_class(dbclass,json_request):

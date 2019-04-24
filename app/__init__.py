@@ -21,10 +21,7 @@ from sqlalchemy.sql import func
 from flask_cors import CORS
 
 from .config import URL
-from .config import SECRET_KEY
 from .config import DEV
-from .config import LOGIN_KEY
-from .config import PREFIX
 from .config import API_TITLE, API_DESCRIPTION
 
 
@@ -34,7 +31,6 @@ from .routes import ns_token, ns_order, ns_file, ns_geneid
 
 # initialization
 app = Flask(__name__)
-app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = URL
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

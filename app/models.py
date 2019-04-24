@@ -10,7 +10,6 @@ import uuid
 from .config import SPACES
 from .config import BUCKET
 
-from .config import SECRET_KEY
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 from passlib.apps import custom_app_context as pwd_context
