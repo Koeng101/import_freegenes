@@ -4,7 +4,6 @@ from .models import *
 from flask_restplus import Api, Resource, fields, Namespace 
 from flask import Flask, abort, request, jsonify, g, url_for, redirect
 
-from .config import PREFIX
 from .config import SPACES
 from .config import BUCKET        
 from .config import FG_API
