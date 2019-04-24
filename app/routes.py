@@ -242,6 +242,21 @@ class DownloadFile(Resource):
         obj = Files.query.filter_by(uuid=uuid).first()
         return obj.download()
 
+file_update = ns_file.model('file_update', {
+    'status': fields.String(),
+    'breadcrumb': fields.String(),
+    'plate_name': fields.String(),
+    'plate_vendor_id': fields.String(),
+    })
+
+@ns_file.route('update/<uuid>')
+class UpdateFile(Resource):
+    @ns_file.doc('file_update', security='token')
+    @requires_auth(['moderator','admin'])
+    @ns_file.expects(file_update)
+    def put(self,uuid):
+        return crud_put(Files,uuid,request.get_json(),db)
+
 ##
 
 ns_order = Namespace('orders', description='Orders')
