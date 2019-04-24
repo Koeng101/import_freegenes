@@ -230,7 +230,7 @@ class NewFile(Resource):
                             new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
 
                         # Handle wells
-                        new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
+                        new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock', 'organism': 'E.coli Top10'}
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
         new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status,json_file['plate_name'],json_file['breadcrumb'])
         db.session.add(new_file)
