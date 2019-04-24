@@ -41,7 +41,8 @@ def get_object_range(s3, total_bytes, key):
         yield s3.get_object(Bucket=BUCKET, Key=key, Range=byte_range)['Body'].read()
 
 class Files(db.Model):
-    def __init__(self,name,file,plate_type,order_uuid,status,plate_name,breadcrumb=''):
+    def __init__(self,name,file,plate_type,order_uuid,status,plate_name,breadcrumb):
+        print(name)
         file_name = str(uuid.uuid4())
         def upload_file_to_spaces(file,file_name=file_name,bucket_name=BUCKET,spaces=SPACES):
             """

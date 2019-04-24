@@ -185,7 +185,6 @@ class NewFile(Resource):
     def post(self):
         file_to_upload = request.files['file'].read()
         json_file = json.loads(request.files['json'].read())
-        print(json_file)
         if request.headers['Token'] != None:
             token = str(request.headers['Token'])
         elif 'token' in json_file:
@@ -225,18 +224,15 @@ class NewFile(Resource):
 
                         # Handle sample
                         sample_url = '{}/samples/{}'.format(FG_API,str(geneid.sample_uuid))
-                        print(sample_url)
                         sample = requests.get(sample_url).json()
                         if sample == []: 
                             new_sample = {'token':token, 'part_uuid': str(geneid.gene_uuid), 'uuid': str(geneid.sample_uuid), 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
-                            print(new_sample)
                             new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
 
                         # Handle wells
                         new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
-        print(json_file)
-        new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
+        new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status,json_file['plate_name'],json_file['breadcrumb'])
         db.session.add(new_file)
         db.session.commit()
         return jsonify(new_file.toJSON())
