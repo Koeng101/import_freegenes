@@ -253,7 +253,7 @@ file_update = ns_file.model('file_update', {
 class UpdateFile(Resource):
     @ns_file.doc('file_update', security='token')
     @requires_auth(['moderator','admin'])
-    @ns_file.expects(file_update)
+    @ns_file.expect(file_update)
     def put(self,uuid):
         return crud_put(Files,uuid,request.get_json(),db)
 
