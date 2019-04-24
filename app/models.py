@@ -41,7 +41,7 @@ def get_object_range(s3, total_bytes, key):
         yield s3.get_object(Bucket=BUCKET, Key=key, Range=byte_range)['Body'].read()
 
 class Files(db.Model):
-    def __init__(self,name,file,plate_type,order_uuid,status,plate_name,breadcrumb):
+    def __init__(self,name,file,plate_type,order_uuid,status,plate_name,breadcrumb,plate_vendor_id):
         print(name)
         file_name = str(uuid.uuid4())
         def upload_file_to_spaces(file,file_name=file_name,bucket_name=BUCKET,spaces=SPACES):
@@ -64,6 +64,7 @@ class Files(db.Model):
             self.status = status
             self.breadcrumb = breadcrumb
             self.plate_name = plate_name
+            self.plate_vendor_id = plate_vendor_id
             # Also include plate_name in json_file if uploading a glycerol stock or dna stock
     __tablename__ = 'files'
     uuid = db.Column(UUID(as_uuid=True), unique=True, nullable=False,default=sqlalchemy.text("uuid_generate_v4()"), primary_key=True)
@@ -76,9 +77,10 @@ class Files(db.Model):
     status = db.Column(db.String)
     breadcrumb = db.Column(db.String)
     plate_name = db.Column(db.String)
+    plate_vendor_id = db.Column(db.String)
     
     def toJSON(self,full=None):
-        return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid}
+        return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid,'breadcrumb':self.breadcrumb,'plate_name':plate_name,'status':status,'plate_vendor_id':plate_vendor_id}
     def download(self):
         s3 = SPACES
         key = self.file_name
