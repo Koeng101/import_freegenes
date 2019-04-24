@@ -219,19 +219,18 @@ class NewFile(Resource):
                     # Iterate through rows
                     for index,row in df.iterrows():
                         geneid = GeneId.query.filter_by(gene_id=row['Name']).first()
-                        if geneid == None:
-                            return make_response(jsonify({'message': 'geneid not found'}),204)
+                        if geneid != None:
+                            
+                            # Handle sample
+                            sample_url = '{}/samples/{}'.format(FG_API,str(geneid.sample_uuid))
+                            sample = requests.get(sample_url).json()
+                            if sample == []: 
+                                new_sample = {'token':token, 'part_uuid': str(geneid.gene_uuid), 'uuid': str(geneid.sample_uuid), 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
+                                new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
 
-                        # Handle sample
-                        sample_url = '{}/samples/{}'.format(FG_API,str(geneid.sample_uuid))
-                        sample = requests.get(sample_url).json()
-                        if sample == []: 
-                            new_sample = {'token':token, 'part_uuid': str(geneid.gene_uuid), 'uuid': str(geneid.sample_uuid), 'status': 'Confirmed', 'evidence': 'Twist_Confirmed'}
-                            new_sample = requests.post('{}/samples'.format(FG_API), json=new_sample)
-
-                        # Handle wells
-                        new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock', 'organism': 'E.coli Top10'}
-                        new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
+                            # Handle wells
+                            new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock', 'organism': 'E.coli Top10'}
+                            new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
         new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status,json_file['plate_name'],json_file['breadcrumb'])
         db.session.add(new_file)
         db.session.commit()

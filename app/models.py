@@ -49,6 +49,7 @@ class Files(db.Model):
             Docs: http://boto3.readthedocs.io/en/latest/guide/s3.html
             http://zabana.me/notes/upload-files-amazon-s3-flask.html"""
             try:
+                print('Attempting')
                 spaces.upload_fileobj(file,bucket_name,file_name)
                 print('Uploaded')
             except Exception as e:
