@@ -185,6 +185,7 @@ class NewFile(Resource):
     def post(self):
         file_to_upload = request.files['file'].read()
         json_file = json.loads(request.files['json'].read())
+        print(json_file)
         if request.headers['Token'] != None:
             token = str(request.headers['Token'])
         elif 'token' in json_file:
@@ -234,6 +235,7 @@ class NewFile(Resource):
                         # Handle wells
                         new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
+        print(json_file)
         new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
         db.session.add(new_file)
         db.session.commit()
@@ -245,7 +247,7 @@ class DownloadFile(Resource):
         obj = Files.query.filter_by(uuid=uuid).first()
         return obj.download()
 
-###
+##
 
 ns_order = Namespace('orders', description='Orders')
 order_model = ns_order.model('order', {
