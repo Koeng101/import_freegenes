@@ -21,7 +21,6 @@ from sqlalchemy.sql import func
 from flask_cors import CORS
 
 from .config import URL
-from .config import DEV
 from .config import API_TITLE, API_DESCRIPTION
 
 
@@ -57,8 +56,8 @@ for ns in namespaces:
     api.add_namespace(ns)
 
 
-if __name__ == '__main__' and DEV == True:
+if __name__ == '__main__':
     app.run(debug=True)
-elif __name__ == '__main__' and DEV == False:
+elif __name__ == '__main__':
     app.run(host='0.0.0.0')
 

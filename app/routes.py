@@ -200,6 +200,7 @@ class NewFile(Resource):
                     r = requests.get('{}/parts/get/gene_id/{}'.format(FG_API,row['Name']))
                     if r.status_code == 200:
                         gene_uuid = r.json()[0]['uuid']
+                        print(gene_uuid)
                         new_gene = GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid)
                         db.session.add(GeneId(gene_id=row['Name'],status='ordered',order_uuid=json_file['order_uuid'],evidence='',gene_uuid=gene_uuid))
             else:
@@ -234,10 +235,11 @@ class NewFile(Resource):
                         # Handle wells
                         new_well = {'token':token, 'plate_uuid':plate_uuid, 'address':row['Well Location'], 'volume': 50, 'media': 'glycerol_lb', 'well_type':'glycerol_stock'}
                         new_well = requests.post('{}/wells'.format(FG_API), json=new_well)         
-        new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
-        db.session.add(new_file)
-        db.session.commit()
-        return jsonify(new_file.toJSON())
+        #new_file = Files(json_file['name'],io.BytesIO(file_to_upload),json_file['plate_type'],json_file['order_uuid'],status, json_file['plate_name'], json_file['breadcrumb'])
+        #db.session.add(new_file)
+        #db.session.commit()
+        #return jsonify(new_file.toJSON())
+        return jsonify('woo')
 
 @ns_file.route('/download/<uuid>')
 class DownloadFile(Resource):
