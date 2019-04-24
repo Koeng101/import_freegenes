@@ -1,2 +1,1 @@
-web: gunicorn wsgi:app --workers=4 --graceful-timeout=120
-
+web: gunicorn wsgi:app --workers=4 --timeout 120 --graceful-timeout 60
