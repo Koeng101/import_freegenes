@@ -150,7 +150,7 @@ class CRUD():
 
         @self.ns.route('/full/<uuid>')
         class FullRoute(Resource):
-            @self.ns.doc('{}_full'.format(self.name))
+            @self.ns.doc('{}_full_single'.format(self.name))
             def get(self,uuid):
                 return crud_get(cls,uuid,full='full')
 
