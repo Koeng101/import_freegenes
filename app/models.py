@@ -80,7 +80,7 @@ class Files(db.Model):
     plate_vendor_id = db.Column(db.String)
     
     def toJSON(self,full=None):
-        return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid,'breadcrumb':self.breadcrumb,'plate_name':plate_name,'status':status,'plate_vendor_id':plate_vendor_id}
+        return {'uuid':self.uuid,'name':self.name,'file_name':self.file_name,'plate_type':self.plate_type,'order_uuid':self.order_uuid,'breadcrumb':self.breadcrumb,'plate_name':self.plate_name,'status':self.status,'plate_vendor_id':self.plate_vendor_id}
     def download(self):
         s3 = SPACES
         key = self.file_name
